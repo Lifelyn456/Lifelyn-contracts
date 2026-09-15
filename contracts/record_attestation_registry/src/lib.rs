@@ -60,7 +60,9 @@ mod test {
         let reference = BytesN::from_array(&env, &[1; 32]);
         let hash = BytesN::from_array(&env, &[2; 32]);
         client.attest(&reference, &hash, &issuer);
-        assert_eq!(client.get(&reference).unwrap().content_hash, hash);
+        // `env.events().all()` reflects only the most recent top-level invocation, so this
+        // must be asserted before the read-only `get` call below (which is itself a separate
+        // invocation with no events) replaces it with an empty list.
         assert_eq!(
             env.events().all(),
             std::vec![RecordAttested {
@@ -70,6 +72,7 @@ mod test {
             }
             .to_xdr(&env, &id)]
         );
+        assert_eq!(client.get(&reference).unwrap().content_hash, hash);
     }
     #[test]
     #[should_panic]

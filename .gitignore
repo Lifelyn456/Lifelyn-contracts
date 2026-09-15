@@ -1,3 +1,4 @@
 /target/
 .env
 contract-ids.*.json
+test_snapshots/

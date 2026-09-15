@@ -79,7 +79,9 @@ mod test {
             &reference,
             &BytesN::from_array(&env, &[3; 32]),
         );
-        assert_eq!(client.get(&reference).unwrap().timestamp, 123);
+        // `env.events().all()` reflects only the most recent top-level invocation, so this
+        // must be asserted before the read-only `get` call below (which is itself a separate
+        // invocation with no events) replaces it with an empty list.
         assert_eq!(
             env.events().all(),
             std::vec![AccessRecorded {
@@ -88,6 +90,7 @@ mod test {
             }
             .to_xdr(&env, &id)]
         );
+        assert_eq!(client.get(&reference).unwrap().timestamp, 123);
     }
     #[test]
     #[should_panic]

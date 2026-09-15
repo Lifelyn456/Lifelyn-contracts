@@ -95,7 +95,9 @@ mod test {
         client.register(&reference, &authority, &BytesN::from_array(&env, &[2; 32]));
         assert!(!client.get_status(&reference));
         client.set_status(&reference, &true);
-        assert!(client.get_status(&reference));
+        // `env.events().all()` reflects only the most recent top-level invocation, so this
+        // must be asserted before the read-only `get_status` call below (which is itself a
+        // separate invocation with no events) replaces it with an empty list.
         assert_eq!(
             env.events().all(),
             std::vec![ProviderStatus {
@@ -104,6 +106,7 @@ mod test {
             }
             .to_xdr(&env, &id)]
         );
+        assert!(client.get_status(&reference));
     }
     #[test]
     #[should_panic]
