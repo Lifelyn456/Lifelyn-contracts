@@ -1,0 +1,27 @@
+name: Contract checks
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: rustsec/audit-check@v2
+      - run: rustup update stable
+      - run: rustup target add wasm32v1-none
+      - name: Install pinned Stellar CLI
+        run: cargo install stellar-cli --version 27.1.0 --locked
+      - run: cargo fmt --all -- --check
+      - run: cargo clippy --workspace --all-targets --locked -- -D warnings
+      - run: cargo test --workspace --locked
+      - run: cargo build --workspace --release --target wasm32v1-none --locked
+      - run: pwsh ./scripts/generate-bindings.ps1
+      - run: git diff --exit-code -- bindings
+      - name: Start Stellar Quickstart local network
+        run: stellar container start local
+      - name: Deploy and exercise contracts on local network
+        run: pwsh ./scripts/local-network-smoke.ps1
+      - name: Stop Stellar Quickstart local network
+        if: always()
+        run: stellar container stop local
