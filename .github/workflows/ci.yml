@@ -14,7 +14,7 @@ jobs:
       - run: rustup update stable
       - run: rustup target add wasm32v1-none
       - name: Install native build dependencies for Stellar CLI
-        run: sudo apt-get update && sudo apt-get install -y libdbus-1-dev pkg-config
+        run: sudo apt-get update && sudo apt-get install -y libdbus-1-dev libudev-dev libssl-dev pkg-config
       - name: Install pinned Stellar CLI
         run: cargo install stellar-cli --version 27.1.0 --locked
       - run: cargo fmt --all -- --check
