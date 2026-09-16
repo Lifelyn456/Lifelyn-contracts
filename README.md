@@ -12,6 +12,8 @@
   <img src="https://img.shields.io/badge/license-unlicensed-lightgrey" alt="Unlicensed" />
 </p>
 
+<p align="center">📖 <a href="https://cjay-1.gitbook.io/lifelyn-docs/">Documentation</a></p>
+
 One Rust/Soroban workspace holding the four contracts that anchor [Lifelyn](https://github.com/Lifelyn456/lifelyn-web)'s trust layer: consent, provider status, immutable record attestation, and access receipts. State and typed events contain **only** opaque 32-byte references, addresses, timestamps, booleans, and hashes — never medical content, readable consent categories, names, document locations, or queries.
 
 Every state-changing method requires explicit Soroban authorization (`require_auth()`). Consent validates its window and uses **ledger time** for `is_active`, so a caller can never forge `now`. Access receipts likewise record ledger time rather than a caller-controlled timestamp. Provider registration is restricted to the constructor-set authority and verifies the authority argument. Record attestations are immutable per opaque record/version reference.

@@ -2,6 +2,21 @@ $ErrorActionPreference = "Stop"
 $workspace = Split-Path -Parent $PSScriptRoot
 $identity = "lifelyn-ci"
 
+# `stellar container start local` returns as soon as the container process starts, but
+# Stellar Core/RPC inside it need a bit longer to open their database before they can
+# actually serve requests ("DB is empty" otherwise). Poll RPC's getHealth until ready.
+$deadline = (Get-Date).AddSeconds(60)
+$healthy = $false
+do {
+  Start-Sleep -Seconds 3
+  try {
+    $health = Invoke-RestMethod -Method Post -Uri "http://localhost:8000/rpc" `
+      -ContentType "application/json" -Body '{"jsonrpc":"2.0","id":1,"method":"getHealth"}' -ErrorAction Stop
+    $healthy = $health.result.status -eq "healthy"
+  } catch { $healthy = $false }
+} until ($healthy -or (Get-Date) -gt $deadline)
+if (-not $healthy) { throw "Local Stellar RPC did not become healthy within 60 seconds." }
+
 stellar keys generate $identity --network local --fund --overwrite
 $address = (stellar keys address $identity).Trim()
 if (-not $address.StartsWith("G")) { throw "Local Stellar identity was not created." }
