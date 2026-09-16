@@ -2,7 +2,7 @@ $ErrorActionPreference = "Stop"
 $workspace = Split-Path -Parent $PSScriptRoot
 $identity = "lifelyn-ci"
 
-stellar keys generate --global $identity --network local --fund
+stellar keys generate $identity --network local --fund --overwrite
 $address = (stellar keys address $identity).Trim()
 if (-not $address.StartsWith("G")) { throw "Local Stellar identity was not created." }
 
