@@ -31,7 +31,7 @@ git diff --exit-code -- bindings   # bindings must be regenerated, not hand-edit
 
 CI additionally runs a local-network smoke test (`scripts/local-network-smoke.ps1`) that deploys all four contracts and exercises a real grant/revoke cycle. All checks must be green before merge.
 
-> **Windows note**: native `cargo test` can fail to link on some Windows hosts with `x86_64-pc-windows-gnu` (`export ordinal too large`, a MinGW linker limit on this dependency tree). If you hit that, run tests from WSL 2 or rely on CI — it's a host toolchain limitation, not a code issue.
+> **Windows note**: with the `x86_64-pc-windows-gnu` toolchain, `cargo test` can fail to link (`export ordinal too large`, a MinGW limit on this dependency tree). Telling the linker not to auto-export symbols avoids it: `RUSTFLAGS="-C link-arg=-Wl,--exclude-all-symbols" cargo test --workspace --locked` (PowerShell: `$env:RUSTFLAGS = "-C link-arg=-Wl,--exclude-all-symbols"` first). WSL 2 and CI also work.
 
 ## Commit style
 
