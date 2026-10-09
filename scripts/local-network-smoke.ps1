@@ -17,9 +17,24 @@ do {
 } until ($healthy -or (Get-Date) -gt $deadline)
 if (-not $healthy) { throw "Local Stellar RPC did not become healthy within 60 seconds." }
 
-stellar keys generate $identity --network local --fund --overwrite
+stellar keys generate $identity --network local --overwrite
 $address = (stellar keys address $identity).Trim()
 if (-not $address.StartsWith("G")) { throw "Local Stellar identity was not created." }
+
+# RPC can report healthy before the friendbot behind it is ready, in which case a one-shot
+# `--fund` silently leaves the account missing and the first deploy fails with "Account not
+# found". Retry funding until the account actually exists on the ledger.
+$funded = $false
+for ($attempt = 1; $attempt -le 20 -and -not $funded; $attempt++) {
+  try { stellar keys fund $identity --network local 2>&1 | Out-Null } catch { }
+  try {
+    Invoke-RestMethod -Uri "http://localhost:8000/accounts/$address" -ErrorAction Stop | Out-Null
+    $funded = $true
+  } catch {
+    Start-Sleep -Seconds 3
+  }
+}
+if (-not $funded) { throw "Local Stellar account $address was not funded after 20 attempts." }
 
 $env:STELLAR_NETWORK = "local"
 $env:STELLAR_DEPLOYER_IDENTITY = $identity
