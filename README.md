@@ -54,6 +54,8 @@ Every state-changing method requires explicit Soroban authorization (`require_au
 
 View any of these on [Stellar Expert (Testnet)](https://stellar.expert/explorer/testnet). These are Testnet-only; Mainnet deployment requires an independent Soroban/security review first.
 
+> **These September deployments predate the storage-lifetime fix and have expired.** Contracts that do not extend their TTL are archived after about 7 days on Testnet. The current source renews every entry on every write; see [`docs/STORAGE_TTL.md`](docs/STORAGE_TTL.md). Deploy the current Wasm and update the contract IDs in the API and signer to get that behaviour.
+
 ## Build and bindings
 
 Install Rust stable, the `wasm32v1-none` target, and Stellar CLI 27. Then:
@@ -66,7 +68,7 @@ stellar contract build
 pwsh ./scripts/generate-bindings.ps1
 ```
 
-Generated TypeScript packages are committed under `bindings/`; CI regenerates them and rejects a diff. Host tests require a working native linker and run authoritatively on Linux CI — on some Windows hosts, native `cargo test` can fail to *link* (`export ordinal too large`, a MinGW limit on this dependency tree); that's an environment limitation, not a code defect, and Linux CI is authoritative.
+Generated TypeScript packages are committed under `bindings/`; CI regenerates them and rejects a diff. On Windows with the GNU toolchain, `cargo test` can fail to *link* (`export ordinal too large`); run it with `RUSTFLAGS="-C link-arg=-Wl,--exclude-all-symbols"` (see [`CONTRIBUTING.md`](CONTRIBUTING.md)). Linux CI is authoritative.
 
 Linux CI also starts the official Stellar Quickstart local network, deploys all four built contracts with a generated test-only identity, grants and revokes consent through the deployed contract, and asserts the live on-chain state transition. The smoke script is `scripts/local-network-smoke.ps1` and requires Docker plus Stellar CLI 27.
 

@@ -2,6 +2,12 @@
 use soroban_sdk::{
     contract, contractevent, contractimpl, contracttype, symbol_short, Address, BytesN, Env,
 };
+// Soroban archives a persistent entry when its TTL runs out, and reads of an archived entry fail
+// until someone restores it. A new entry lives only min_persistent_ttl ledgers (about 7 days on
+// Testnet), so every write renews the TTL. Renew once under ~30 days remain and extend to ~150
+// days (17,280 ledgers a day), below the network's 3,110,400-ledger ceiling.
+const TTL_THRESHOLD: u32 = 518_400;
+const TTL_EXTEND_TO: u32 = 2_592_000;
 #[contractevent(topics = ["provider_status"])]
 pub struct ProviderStatus {
     #[topic]
@@ -47,6 +53,7 @@ impl ProviderRegistry {
                 verified: false,
             },
         );
+        Self::renew(&env, &provider_ref);
     }
     pub fn set_status(env: Env, provider_ref: BytesN<32>, verified: bool) {
         let authority: Address = env
@@ -62,11 +69,23 @@ impl ProviderRegistry {
             .expect("missing provider");
         provider.verified = verified;
         env.storage().persistent().set(&provider_ref, &provider);
+        Self::renew(&env, &provider_ref);
         ProviderStatus {
             provider_ref,
             verified,
         }
         .publish(&env);
+    }
+    // Keeps both the provider record and this contract's instance storage (which holds the
+    // authority) alive. A plain `//` comment is used deliberately: `///` on a
+    // `#[contractimpl]` method would be captured into the contract spec.
+    fn renew(env: &Env, provider_ref: &BytesN<32>) {
+        env.storage()
+            .persistent()
+            .extend_ttl(provider_ref, TTL_THRESHOLD, TTL_EXTEND_TO);
+        env.storage()
+            .instance()
+            .extend_ttl(TTL_THRESHOLD, TTL_EXTEND_TO);
     }
     pub fn get_status(env: Env, provider_ref: BytesN<32>) -> bool {
         env.storage()
@@ -80,6 +99,7 @@ impl ProviderRegistry {
 mod test {
     extern crate std;
     use super::*;
+    use soroban_sdk::testutils::storage::{Instance as _, Persistent as _};
     use soroban_sdk::{
         testutils::{Address as _, Events as _},
         Event,
@@ -132,5 +152,22 @@ mod test {
         client.register(&reference, &authority, &BytesN::from_array(&env, &[2; 32]));
         env.mock_auths(&[]);
         client.set_status(&reference, &true);
+    }
+    #[test]
+    fn registration_and_status_changes_extend_storage_ttl() {
+        let env = Env::default();
+        env.mock_all_auths();
+        let authority = Address::generate(&env);
+        let id = env.register(ProviderRegistry, (authority.clone(),));
+        let client = ProviderRegistryClient::new(&env, &id);
+        let reference = BytesN::from_array(&env, &[1; 32]);
+        let entry_ttl = || env.as_contract(&id, || env.storage().persistent().get_ttl(&reference));
+        let instance_ttl = || env.as_contract(&id, || env.storage().instance().get_ttl());
+        client.register(&reference, &authority, &BytesN::from_array(&env, &[2; 32]));
+        assert_eq!(entry_ttl(), TTL_EXTEND_TO);
+        assert_eq!(instance_ttl(), TTL_EXTEND_TO);
+        client.set_status(&reference, &true);
+        assert!(entry_ttl() >= TTL_THRESHOLD);
+        assert!(instance_ttl() >= TTL_THRESHOLD);
     }
 }
