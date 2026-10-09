@@ -9,7 +9,7 @@
   <a href="https://github.com/Lifelyn456/Lifelyn-contracts/actions/workflows/ci.yml"><img src="https://github.com/Lifelyn456/Lifelyn-contracts/actions/workflows/ci.yml/badge.svg" alt="Contract checks" /></a>
   <img src="https://img.shields.io/badge/stack-Rust%20%2F%20Soroban-DE7A22" alt="Rust / Soroban" />
   <img src="https://img.shields.io/badge/network-Stellar%20Testnet-08B5E5" alt="Stellar Testnet" />
-  <img src="https://img.shields.io/badge/license-unlicensed-lightgrey" alt="Unlicensed" />
+  <a href="LICENSE"><img src="https://img.shields.io/github/license/Lifelyn456/Lifelyn-contracts?color=blue" alt="License: MIT" /></a>
 </p>
 
 <p align="center">📖 <a href="https://cjay-1.gitbook.io/lifelyn-docs/">Documentation</a></p>
